@@ -994,7 +994,7 @@ const [argDepth, argBeg, argNum] = userArg
   .split(',')
   .map((str) => parseInt(str))
 
-// Restrict a value beteen a min and max, inclusive.
+// Restrict a value between a min and max, inclusive.
 const clampVal = (val: number, min: number, max: number) => {
   return Math.min(Math.max(val, min), max)
 }
