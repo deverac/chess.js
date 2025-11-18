@@ -832,109 +832,96 @@ export class Chess {
     this._turn = tokens[1] as Color
 
     const castleField = tokens[2]
-    const castleChars = castleField.split('')
-    const isLengthOk = castleField.length <= 4
-    const isCharsUnique = new Set(castleChars).size === castleChars.length
-    const exclRegex = this.isChess960() ? /[^A-HKQa-hkq]/ : /[^KQkq]/
-    const isValidChars = !exclRegex.test(castleField)
-    const isDash = castleField === '-'
+    const inf = this._getKingAndRookInfo()
 
-    // Decode the castling field
-    if (
-      (isLengthOk && isCharsUnique && (isValidChars || isDash)) ||
-      skipValidation
-    ) {
-      const inf = this._getKingAndRookInfo()
+    // Find rooks that have castling rights based on castling field in FEN.
+    const rk: Record<string, number[]> = {
+      bks: [], // black kingside
+      bqs: [], // black queenside
+      wks: [], // white kingside
+      wqs: [], // white queenside
+    }
 
-      // Find rooks that have castling rights based on castling field in FEN.
-      const rk: Record<string, number[]> = {
-        bks: [], // black kingside
-        bqs: [], // black queenside
-        wks: [], // white kingside
-        wqs: [], // white queenside
+    const flagsRegex = this.isChess960() ? /[A-HKQa-hkq]/g : /[KQkq]/g
+    const matches = castleField.match(flagsRegex) || []
+    matches.forEach((ch) => {
+      // Handle 'KQkq' castling characters.
+      if (inf.w.castling.isQueensidePossible && ch == 'Q') {
+        rk.wqs.push(inf.w.leftmostQueensideRookSq)
+      }
+      if (inf.w.castling.isKingsidePossible && ch == 'K') {
+        rk.wks.push(inf.w.rightmostKingsideRookSq)
+      }
+      if (inf.b.castling.isQueensidePossible && ch == 'q') {
+        rk.bqs.push(inf.b.leftmostQueensideRookSq)
+      }
+      if (inf.b.castling.isKingsidePossible && ch == 'k') {
+        rk.bks.push(inf.b.rightmostKingsideRookSq)
       }
 
-      const flagsRegex = this.isChess960() ? /[A-HKQa-hkq]/g : /[KQkq]/g
-      const matches = castleField.match(flagsRegex) || []
-      matches.forEach((ch) => {
-        // Handle 'KQkq' castling characters.
-        if (inf.w.castling.isQueensidePossible && ch == 'Q') {
-          rk.wqs.push(inf.w.leftmostQueensideRookSq)
-        }
-        if (inf.w.castling.isKingsidePossible && ch == 'K') {
-          rk.wks.push(inf.w.rightmostKingsideRookSq)
-        }
-        if (inf.b.castling.isQueensidePossible && ch == 'q') {
-          rk.bqs.push(inf.b.leftmostQueensideRookSq)
-        }
-        if (inf.b.castling.isKingsidePossible && ch == 'k') {
-          rk.bks.push(inf.b.rightmostKingsideRookSq)
-        }
-
-        // Handle 'A-H' castling characters.
-        const wRookCol = ch.charCodeAt(0) - 'A'.charCodeAt(0)
-        if (
-          inf.w.castling.isQueensidePossible &&
-          inf.w.queensideRooks.includes(wRookCol)
-        ) {
-          rk.wqs.push(Ox88.a1 + wRookCol)
-        }
-        if (
-          inf.w.castling.isKingsidePossible &&
-          inf.w.kingsideRooks.includes(wRookCol)
-        ) {
-          rk.wks.push(Ox88.a1 + wRookCol)
-        }
-
-        // Handle 'a-h' castling characters.
-        const bRookCol = ch.charCodeAt(0) - 'a'.charCodeAt(0)
-        if (
-          inf.b.castling.isQueensidePossible &&
-          inf.b.queensideRooks.includes(bRookCol)
-        ) {
-          rk.bqs.push(Ox88.a8 + bRookCol)
-        }
-        if (
-          inf.b.castling.isKingsidePossible &&
-          inf.b.kingsideRooks.includes(bRookCol)
-        ) {
-          rk.bks.push(Ox88.a8 + bRookCol)
-        }
-      })
-
-      // Set the castling rights.
-      if (rk.bks.length == 1) {
-        this._castling.b |= BITS.KSIDE_CASTLE
+      // Handle 'A-H' castling characters.
+      const wRookCol = ch.charCodeAt(0) - 'A'.charCodeAt(0)
+      if (
+        inf.w.castling.isQueensidePossible &&
+        inf.w.queensideRooks.includes(wRookCol)
+      ) {
+        rk.wqs.push(Ox88.a1 + wRookCol)
       }
-      if (rk.bqs.length == 1) {
-        this._castling.b |= BITS.QSIDE_CASTLE
-      }
-      if (rk.wks.length == 1) {
-        this._castling.w |= BITS.KSIDE_CASTLE
-      }
-      if (rk.wqs.length == 1) {
-        this._castling.w |= BITS.QSIDE_CASTLE
+      if (
+        inf.w.castling.isKingsidePossible &&
+        inf.w.kingsideRooks.includes(wRookCol)
+      ) {
+        rk.wks.push(Ox88.a1 + wRookCol)
       }
 
-      const bCastlingRights = this._getCastlingRights(BLACK)
-      const wCastlingRights = this._getCastlingRights(WHITE)
+      // Handle 'a-h' castling characters.
+      const bRookCol = ch.charCodeAt(0) - 'a'.charCodeAt(0)
+      if (
+        inf.b.castling.isQueensidePossible &&
+        inf.b.queensideRooks.includes(bRookCol)
+      ) {
+        rk.bqs.push(Ox88.a8 + bRookCol)
+      }
+      if (
+        inf.b.castling.isKingsidePossible &&
+        inf.b.kingsideRooks.includes(bRookCol)
+      ) {
+        rk.bks.push(Ox88.a8 + bRookCol)
+      }
+    })
 
-      // Update _rooks squares that are able to castle.
-      this._rooks.w = {}
-      this._rooks.b = {}
+    // Set the castling rights.
+    if (rk.bks.length == 1) {
+      this._castling.b |= BITS.KSIDE_CASTLE
+    }
+    if (rk.bqs.length == 1) {
+      this._castling.b |= BITS.QSIDE_CASTLE
+    }
+    if (rk.wks.length == 1) {
+      this._castling.w |= BITS.KSIDE_CASTLE
+    }
+    if (rk.wqs.length == 1) {
+      this._castling.w |= BITS.QSIDE_CASTLE
+    }
 
-      if (bCastlingRights[KING] && rk.bks.length) {
-        this._rooks[BLACK][BITS.KSIDE_CASTLE] = rk.bks[0]
-      }
-      if (bCastlingRights[QUEEN] && rk.bqs.length) {
-        this._rooks[BLACK][BITS.QSIDE_CASTLE] = rk.bqs[0]
-      }
-      if (wCastlingRights[KING] && rk.wks.length) {
-        this._rooks[WHITE][BITS.KSIDE_CASTLE] = rk.wks[0]
-      }
-      if (wCastlingRights[QUEEN] && rk.wqs.length) {
-        this._rooks[WHITE][BITS.QSIDE_CASTLE] = rk.wqs[0]
-      }
+    const bCastlingRights = this._getCastlingRights(BLACK)
+    const wCastlingRights = this._getCastlingRights(WHITE)
+
+    // Update _rooks squares that are able to castle.
+    this._rooks.w = {}
+    this._rooks.b = {}
+
+    if (bCastlingRights[KING] && rk.bks.length) {
+      this._rooks[BLACK][BITS.KSIDE_CASTLE] = rk.bks[0]
+    }
+    if (bCastlingRights[QUEEN] && rk.bqs.length) {
+      this._rooks[BLACK][BITS.QSIDE_CASTLE] = rk.bqs[0]
+    }
+    if (wCastlingRights[KING] && rk.wks.length) {
+      this._rooks[WHITE][BITS.KSIDE_CASTLE] = rk.wks[0]
+    }
+    if (wCastlingRights[QUEEN] && rk.wqs.length) {
+      this._rooks[WHITE][BITS.QSIDE_CASTLE] = rk.wqs[0]
     }
 
     this._epSquare = tokens[3] === '-' ? EMPTY : Ox88[tokens[3] as Square]
