@@ -1850,10 +1850,21 @@ export class Chess {
     } else if (move === null) {
       moveObj = this._moveFromSan(SAN_NULLMOVE, strict)
     } else if (typeof move === 'object') {
-      const moves = this._filterMoves(this._moves(), isChess960CastlingMove)
-
+      const moves = this._moves()
       // convert the pretty move object to an ugly move object
       for (let i = 0, len = moves.length; i < len; i++) {
+        if (this.isChess960()) {
+          if (isChess960CastlingMove) {
+            if (moves[i].flags & ~(BITS.KSIDE_CASTLE | BITS.QSIDE_CASTLE)) {
+              continue
+            }
+          } else {
+            if (moves[i].flags & (BITS.KSIDE_CASTLE | BITS.QSIDE_CASTLE)) {
+              continue
+            }
+          }
+        }
+
         if (
           move.from === algebraic(moves[i].from) &&
           move.to === algebraic(moves[i].to) &&
@@ -3335,30 +3346,6 @@ export class Chess {
     return false
   }
 
-  /**
-   * If the game variant is not Chess960, then this function is a 'no-op' and
-   * simply returns the 'moves' parameter that was passed to it.
-   *
-   * If the game variant is Chess960 then 'moves' is filtered based on
-   * whether castling is desired or not.
-   */
-  private _filterMoves(
-    moves: InternalMove[],
-    is960CastleMove: boolean,
-  ): InternalMove[] {
-    if (this.isChess960()) {
-      return is960CastleMove
-        ? moves.filter(
-            // return all castling moves
-            (mv) => mv.flags & (BITS.KSIDE_CASTLE | BITS.QSIDE_CASTLE),
-          )
-        : moves.filter(
-            // return all non-castling moves
-            (mv) => mv.flags & ~(BITS.KSIDE_CASTLE | BITS.QSIDE_CASTLE),
-          )
-    }
-    return moves
-  }
 
   /**
    * color: BLACK or WHITE
