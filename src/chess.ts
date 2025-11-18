@@ -3203,7 +3203,6 @@ export class Chess {
    * The returned object looks like this:
    * \{
    *    b: \{                        // Black
-   *      king,                     // Column [0-7] of the black king, or -1 if king is not in row 8.
    *      kingsideRooks,            // Columns [0-7] of all rooks to the right of the king.
    *      queensideRooks,           // Columns [0-7] of all rooks to the left of the king.
    *      leftmostQueensideRookSq,  // The Ox88 square of leftmost queenside rook or undefined if no king or no rook.
@@ -3214,7 +3213,6 @@ export class Chess {
    *      \},
    *    \},
    *    w: \{                        // White (Fields below are similar to 'b' fields, above.)
-   *      king,
    *      kingsideRooks,
    *      queensideRooks,
    *      leftmostQueensideRookSq,
@@ -3258,7 +3256,6 @@ export class Chess {
 
     return {
       b: {
-        king: bKing,
         kingsideRooks: bKingsideRooks,
         queensideRooks: bQueensideRooks,
         leftmostQueensideRookSq: Ox88.a8 + bQueensideRooks[0],
@@ -3278,7 +3275,6 @@ export class Chess {
         },
       },
       w: {
-        king: wKing,
         kingsideRooks: wKingsideRooks,
         queensideRooks: wQueensideRooks,
         leftmostQueensideRookSq: Ox88.a1 + wQueensideRooks[0],
@@ -3345,7 +3341,6 @@ export class Chess {
     }
     return false
   }
-
 
   /**
    * color: BLACK or WHITE
